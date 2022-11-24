@@ -132,10 +132,30 @@ void IQSTouchpad::update()
          *   - Touch Area
          */
 
-        // for now, just read the number of fingers
+        // number of fingers
         byte numFingers[1];
         this->_numFingersReg.read(this->_i2cAddress, numFingers);
         this->numFingers = numFingers[0];
+
+        if (this->numFingers > 0)
+        {
+            // finger 1
+            byte finger1X[2];
+            this->_finger1XReg.read(this->_i2cAddress, finger1X);
+            this->finger1X = I2CHelpers::byteArrayToInt(finger1X, 2);
+
+            byte finger1Y[2];
+            this->_finger1YReg.read(this->_i2cAddress, finger1Y);
+            this->finger1Y = I2CHelpers::byteArrayToInt(finger1Y, 2);
+
+            byte finger1Strength[1];
+            this->_finger1StrengthReg.read(this->_i2cAddress, finger1Strength);
+            this->finger1Strength = finger1Strength[0];
+
+            byte finger1Area[1];
+            this->_finger1AreaReg.read(this->_i2cAddress, finger1Area);
+            this->finger1Area = finger1Area[0];
+        }
 
         // end communication window
         this->endCommunicationWindow();

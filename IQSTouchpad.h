@@ -51,6 +51,26 @@ class IQSTouchpad
         bool isReady();
 
         int numFingers;
+        int finger1X;
+        int finger1Y;
+        int finger1Strength;
+        int finger1Area;
+        int finger2X;
+        int finger2Y;
+        int finger2Strength;
+        int finger2Area;
+        int finger3X;
+        int finger3Y;
+        int finger3Strength;
+        int finger3Area;
+        int finger4X;
+        int finger4Y;
+        int finger4Strength;
+        int finger4Area;
+        int finger5X;
+        int finger5Y;
+        int finger5Strength;
+        int finger5Area;
 
         static std::vector<IQSTouchpad*> _touchpads;
         bool _ready = false;

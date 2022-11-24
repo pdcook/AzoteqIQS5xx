@@ -1,5 +1,6 @@
 #include "I2CHelpers.h"
 #include <Wire.h>
+#include <string>
 
 void I2CHelpers::intToTwoByteArray(int value, byte* bytes_array)
 {
@@ -54,6 +55,31 @@ byte I2CHelpers::readFromRegister(int device_address, int register_address, int 
       i++;
     }
     return error;
+}
+
+byte I2CHelpers::writeToRegister(int device_address, int register_address, int bytes_to_write, byte* buf)
+{
+    // start the transmission to device
+    Wire.beginTransmission(device_address);
+
+    // convert the register to read from to a byte array
+    byte addrByteArray[2];
+    I2CHelpers::intToTwoByteArray(register_address, addrByteArray);
+
+    // send the register to read from
+    Wire.write(addrByteArray, 2);
+
+    // send the bytes to write
+    Wire.write(buf, bytes_to_write);
+
+    byte error = Wire.endTransmission(true);
+
+    return error;
+}
+
+bool I2CHelpers::getBit(byte b, int bit)
+{
+    return (b >> bit) & 1;
 }
 
 byte I2CHelpers::endCommunication(int device_address)

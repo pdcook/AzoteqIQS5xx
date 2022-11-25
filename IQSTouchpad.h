@@ -19,43 +19,9 @@ class IQSTouchpad
         int _Y_res_to_set;
         bool _initialized = false;
 
-        // registers
-        IQSRegister _numFingersReg;
-        IQSRegister _finger1XReg;
-        IQSRegister _finger1YReg;
-        IQSRegister _finger1StrengthReg;
-        IQSRegister _finger1AreaReg;
-        IQSRegister _finger2XReg;
-        IQSRegister _finger2YReg;
-        IQSRegister _finger2StrengthReg;
-        IQSRegister _finger2AreaReg;
-        IQSRegister _finger3XReg;
-        IQSRegister _finger3YReg;
-        IQSRegister _finger3StrengthReg;
-        IQSRegister _finger3AreaReg;
-        IQSRegister _finger4XReg;
-        IQSRegister _finger4YReg;
-        IQSRegister _finger4StrengthReg;
-        IQSRegister _finger4AreaReg;
-        IQSRegister _finger5XReg;
-        IQSRegister _finger5YReg;
-        IQSRegister _finger5StrengthReg;
-        IQSRegister _finger5AreaReg;
-        // settings registers
-        IQSRegister _XResolutionReg;
-        IQSRegister _YResolutionReg;
-        IQSRegister _ReportRateActiveModeReg;
-        IQSRegister _ReportRateIdleTouchModeReg;
-        IQSRegister _ReportRateIdleModeReg;
-        IQSRegister _ReportRateLP1ModeReg;
-        IQSRegister _ReportRateLP2ModeReg;
-        IQSRegister _I2CTimeoutReg;
-        // flag registers
-        IQSRegister _SystemInfo1Reg;
-        IQSRegister _SingleFingerGestureReg;
-        IQSRegister _MultiFingerGestureReg;
-        // misc system info registers
-        IQSRegister _PreviousCycleTimeReg;
+        // relative movement, only defined when a single finger is detected
+        int _relX = 0;
+        int _relY = 0;
 
         // system info
         int _prev_cycle_time;
@@ -110,6 +76,10 @@ class IQSTouchpad
 
         int getNumFingers();
         Finger getFinger(int fingerNumber);
+
+        // relative movement, only defined when a single finger is detected
+        int getRelX();
+        int getRelY();
 
         // system info
         int getPrevCycleTime();

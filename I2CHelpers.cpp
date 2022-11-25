@@ -18,6 +18,20 @@ int I2CHelpers::byteArrayToInt(byte* bytes_array, int num_bytes)
     return value;
 }
 
+int I2CHelpers::byteArrayToSignedInt(byte* bytes_array, int num_bytes)
+{
+    int value = 0;
+    for (int i = 0; i < num_bytes; i++)
+    {
+        value = (value << 8) + bytes_array[i];
+    }
+    if (value > 32767)
+    {
+        value = value - 65536;
+    }
+    return value;
+}
+
 byte I2CHelpers::readFromRegister(int device_address, int register_address, int bytes_to_read, byte* buf)
 {
     // start the transmission to device

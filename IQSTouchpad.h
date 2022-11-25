@@ -5,6 +5,9 @@
 #include "IQSRegisters.h"
 #include <vector>
 #include "Finger.h"
+#include "IQSQueue.h"
+#include <queue>
+#include <functional>
 
 #define DEFAULT_I2C_ADDRESS 0x74
 
@@ -17,7 +20,17 @@ class IQSTouchpad
         int _PIN_RST;
         int _X_res_to_set;
         int _Y_res_to_set;
-        bool _initialized = false;
+
+        // queue for pending reads
+        std::queue<IQSRead> _readQueue;
+
+        // queue for pending writes
+        std::queue<IQSWrite> _writeQueue;
+
+        int _X_resolution;
+        int _Y_resolution;
+
+        // values that are read/updated every cycle
 
         // relative movement, only defined when a single finger is detected
         int _relX = 0;
@@ -25,8 +38,6 @@ class IQSTouchpad
 
         // system info
         int _prev_cycle_time;
-        int _X_resolution;
-        int _Y_resolution;
 
         // flags
         // system flags
@@ -52,8 +63,6 @@ class IQSTouchpad
         int _numFingers;
         struct Finger _fingers[5];
 
-        void _initialize();
-
     public:
         IQSTouchpad(int PIN_RDY, int PIN_RST, int X_resolution = -1, int Y_resolution = -1, byte i2cAddress = DEFAULT_I2C_ADDRESS);
 
@@ -76,6 +85,20 @@ class IQSTouchpad
 
         int getNumFingers();
         Finger getFinger(int fingerNumber);
+
+        // queue management
+        void queueRead(IQSRead read);
+        // register + callback(int readValue, byte errorCode)
+        void queueRead(IQSRegister reg, std::function<void(int, byte)> callback);
+        // register + #bytes + callback(int registerAddress, int readValue, byte errorCode)
+        void queueRead(int registerAddress, int numBytes, int dataType, std::function<void(int, int, byte)> callback);
+        // register + #bytes + callback(int registerAddress, int readValue, byte errorCode), int dataType [see IQSRegister.h]
+        void queueRead(int registerAddress, int numBytes, std::function<void(int, int, byte)> callback, int dataType = 1);
+        void queueWrite(IQSWrite write);
+        void queueWrite(IQSRegister reg, int value);
+        void queueWrite(int registerAddress, int numBytes, int value);
+        // register + #bytes + valueToWrite + callback(int registerAddress, byte errorCode)
+        void queueWrite(int registerAddress, int numBytes, int value, std::function<void(int, byte)> callback);
 
         // relative movement, only defined when a single finger is detected
         int getRelX();

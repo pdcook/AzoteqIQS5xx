@@ -6,13 +6,14 @@
 #include <vector>
 #include "Finger.h"
 #include <stdexcept>
+#include <queue>
+#include <functional>
+#include "IQSQueue.h"
 
 std::vector<IQSTouchpad*> IQSTouchpad::_touchpads = std::vector<IQSTouchpad*>();
 
 IQSTouchpad::IQSTouchpad(int PIN_RDY, int PIN_RST, int X_resolution, int Y_resolution, byte i2cAddress)
 {
-    this->_initialized = false;
-
     this->_PIN_RDY = PIN_RDY;
     this->_PIN_RST = PIN_RST;
     this->_i2cAddress = i2cAddress;
@@ -21,12 +22,129 @@ IQSTouchpad::IQSTouchpad(int PIN_RDY, int PIN_RST, int X_resolution, int Y_resol
 
     // add this touchpad to the list of touchpads
     IQSTouchpad::_touchpads.push_back(this);
+
+    // queue settings writes
+    this->setResolution(X_resolution, Y_resolution);
+}
+
+void IQSTouchpad::queueRead(IQSRead read)
+{
+    this->_readQueue.push(read);
+}
+
+void IQSTouchpad::queueRead(IQSRegister reg, std::function<void(int, byte)> callback)
+{
+    // define a lambda function that will take the i2cAddress, registerAddress, read value, and return code and pass only the read value and return code to the callback function
+    auto callbackWrapper = [callback](int i2cAddress, int registerAddress, int readValue, byte returnCode)
+    {
+        callback(readValue, returnCode);
+    };
+
+    // create a read object and add it to the queue
+    IQSRead newRead = {
+        this->_i2cAddress,
+        reg,
+        callbackWrapper
+    };
+
+    this->_readQueue.push(newRead);
+}
+
+void IQSTouchpad::queueRead(int registerAddress, int numBytes, int dataType, std::function<void(int,int,byte)> callback)
+{
+    // define a lambda function that will take the i2cAddress, registerAddress, read value, and return code and pass only the read value and return code to the callback function
+    auto callbackWrapper = [callback](int i2cAddress, int registerAddress, int readValue, byte returnCode)
+    {
+        callback(registerAddress, readValue, returnCode);
+    };
+
+    // create an IQSRegister object
+    IQSRegister reg = IQSRegister(registerAddress, numBytes, "", "", dataType);
+
+    // create a read object and add it to the queue
+    IQSRead newRead = {
+        this->_i2cAddress,
+        reg,
+        callbackWrapper
+    };
+
+    this->_readQueue.push(newRead);
+}
+
+void IQSTouchpad::queueWrite(IQSWrite write)
+{
+    this->_writeQueue.push(write);
+}
+
+void IQSTouchpad::queueWrite(IQSRegister reg, int value)
+{
+
+    // create a blank callback function
+    auto callbackWrapper = [](int i2cAddress, int registerAddress, byte returnCode)
+    {
+    };
+
+    // create a write object and add it to the queue
+    IQSWrite newWrite = {
+        this->_i2cAddress,
+        reg,
+        value,
+        callbackWrapper
+    };
+
+    this->_writeQueue.push(newWrite);
+}
+
+void IQSTouchpad::queueWrite(int registerAddress, int numBytes, int value)
+{
+    // create an IQSRegister object
+    IQSRegister reg = IQSRegister(registerAddress, numBytes, 'b', 0);
+
+    // create a blank callback function
+    auto callbackWrapper = [](int i2cAddress, int registerAddress, byte returnCode)
+    {
+    };
+
+    // create a write object and add it to the queue
+    IQSWrite newWrite = {
+        this->_i2cAddress,
+        reg,
+        value,
+        callbackWrapper
+    };
+
+    this->_writeQueue.push(newWrite);
+}
+
+void IQSTouchpad::queueWrite(int registerAddress, int numBytes, int value, std::function<void(int,byte)> callback)
+{
+    // create an IQSRegister object
+    IQSRegister reg = IQSRegister(registerAddress, numBytes, 'b', 0);
+
+    // create a wrapper callback function
+    auto callbackWrapper = [callback](int i2cAddress, int registerAddress, byte returnCode)
+    {
+        callback(registerAddress, returnCode);
+    };
+
+    // create a write object and add it to the queue
+    IQSWrite newWrite = {
+        this->_i2cAddress,
+        reg,
+        value,
+        callbackWrapper
+    };
+
+    this->_writeQueue.push(newWrite);
 }
 
 void IQSTouchpad::setResolution(int x_res, int y_res)
 {
-    IQSRegisters::XResolution.write(this->_i2cAddress, x_res);
-    IQSRegisters::YResolution.write(this->_i2cAddress, y_res);
+    //IQSRegisters::XResolution.write(this->_i2cAddress, x_res);
+    //IQSRegisters::YResolution.write(this->_i2cAddress, y_res);
+
+    this->queueWrite(IQSRegisters::XResolution, x_res);
+    this->queueWrite(IQSRegisters::YResolution, y_res);
 }
 
 void IQSTouchpad::setReportRate(int rate, int mode)
@@ -174,32 +292,47 @@ bool IQSTouchpad::isReady()
     return this->_ready;
 }
 
-void IQSTouchpad::_initialize()
-{
-    // change settings
-    if (this->_X_res_to_set > 0 && this->_Y_res_to_set > 0)
-    {
-        this->setResolution(this->_X_res_to_set, this->_Y_res_to_set);
-    }
-
-    this->_initialized = true;
-}
-
 void IQSTouchpad::update()
 {
     if (this->_ready)
     {
-        if (!this->_initialized)
+        // check the queue for any pending writes, and apply all of them
+        while (!this->_writeQueue.empty())
         {
-            // initialize the touchpad
-            this->_initialize();
+            IQSWrite write = this->_writeQueue.front();
+
+            // write the value to the register
+            byte error = write.reg.write(write.i2cAddress, write.valueToWrite);
+            write.callback(write.i2cAddress, write.reg.getAddress(), error);
+
+            // remove the write from the queue
+            this->_writeQueue.pop();
         }
+
+        // check the queue for any pending reads, and apply all of them
+        while (!this->_readQueue.empty())
+        {
+            IQSRead read = this->_readQueue.front();
+
+            // read the value from the register
+
+            byte error;
+            int value = read.reg.read(read.i2cAddress, error);
+            read.callback(read.i2cAddress, read.reg.getAddress(), value, error);
+
+            // remove the read from the queue
+            this->_readQueue.pop();
+        }
+
+        // mandatory reads
 
         /*
          * Read the following registers:
          * - Number of fingers
+         * - Relative X (if number of fingers == 1)
+         * - Relative Y (if number of fingers == 1)
          *
-         * - Then the data for each finger that is present:
+         * - Then the data for each finger 0, 1, 2, 3, 4 (even if not present):
          *   - Absolute X
          *   - Absolute Y
          *   - Touch Strength

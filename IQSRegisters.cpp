@@ -69,6 +69,12 @@ byte IQSRegister::read(int device_address, byte* buf)
 
 int IQSRegister::read(int device_address)
 {
+    byte error;
+    return this->read(device_address, error);
+}
+
+int IQSRegister::read(int device_address, byte &error)
+{
     if (this->_mode == 'w')
     {
         // cannot read from a write-only register
@@ -76,7 +82,7 @@ int IQSRegister::read(int device_address)
         throw std::invalid_argument("Cannot read from a write-only register");
     }
     byte buf[this->_numBytes];
-    this->read(device_address, buf);
+    error = this->read(device_address, buf);
     if (this->_dataType == 0 && this->_numBytes == 1)
     {
         return buf[0];

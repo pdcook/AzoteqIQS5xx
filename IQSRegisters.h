@@ -34,6 +34,7 @@ class IQSRegister
 
         byte read(int device_address, byte* buf);
         int read(int device_address);
+        int read(int device_address, byte &error);
 
         byte write(int device_address, byte* data);
         byte write(int device_address, int value);

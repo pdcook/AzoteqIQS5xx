@@ -16,7 +16,7 @@ class IQSRegister
 
         // dataType
         // 0 = byte (raw 8 bit value)
-        // 1 = unsigned int (16 bit value) [DEFAULT]
+        // 1 = unsigned int (8 or 16 bit value) [DEFAULT]
         // 2 = signed int (16 bit value, one sign bit, 15 data bits)
         int _dataType;
 
@@ -94,6 +94,8 @@ static std::unordered_map<int, IQSRegister> IMPORTANT_IQS_REGISTERS
     {0x0580, IQSRegister(0x0580, 2, "LP1 Mode Report Rate", "Low Power 1 Mode Report Rate (ms)", 'b')},
     {0x0582, IQSRegister(0x0582, 2, "LP2 Mode Report Rate", "Low Power 2 Mode Report Rate (ms)", 'b')},
     {0x058A, IQSRegister(0x058A, 1, "I2C Timeout", "I2C Timeout (ms)", 'b')},
+    {0x0669, IQSRegister(0x0669, 1, "XY Config 0", "bits 7-4: unused, bit 3: PALM_REJECT, bit 2: SWITCH_XY_AXIS, bit 1: FLIP_Y, bit 0: FLIP_X", 'b', 0)},
+    {0x066A, IQSRegister(0x066A, 1, "Max multi-touches", "Maximum number of concurrent fingers", 'b', 1)},
 
     // gesture data (data is replicated in two registers)
     {0x000D, IQSRegister(0x000D, 1, "Single Finger Gestures", "bit 7: unused, bit 6: unused, bit 5: SWIPE Y-, bit 4: SWIPE Y+, bit 3: SWIPE X+, bit 2: SWIPE X-, bit 1: TAP AND HOLD, bit 0: SINGLE TAP", 'r', 0)},
@@ -146,6 +148,8 @@ class IQSRegisters
         static IQSRegister LP1ModeReportRate;
         static IQSRegister LP2ModeReportRate;
         static IQSRegister I2CTimeout;
+        static IQSRegister XYConfig0;
+        static IQSRegister MaxMultiTouches;
 
         // flags
         static IQSRegister SingleFingerGestures;

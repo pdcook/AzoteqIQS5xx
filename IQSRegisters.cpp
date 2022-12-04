@@ -1,6 +1,7 @@
 #include "IQSRegisters.h"
 #include "I2CHelpers.h"
 #include <stdexcept>
+#include <Arduino.h>
 
 IQSRegister::IQSRegister()
 {
@@ -194,6 +195,8 @@ IQSRegister IQSRegisters::IdleModeReportRate      = IMPORTANT_IQS_REGISTERS[0x05
 IQSRegister IQSRegisters::LP1ModeReportRate       = IMPORTANT_IQS_REGISTERS[0x0580];
 IQSRegister IQSRegisters::LP2ModeReportRate       = IMPORTANT_IQS_REGISTERS[0x0582];
 IQSRegister IQSRegisters::I2CTimeout              = IMPORTANT_IQS_REGISTERS[0x058A];
+IQSRegister IQSRegisters::XYConfig0               = IMPORTANT_IQS_REGISTERS[0x0669];
+IQSRegister IQSRegisters::MaxMultiTouches         = IMPORTANT_IQS_REGISTERS[0x066A];
 
 // flags
 IQSRegister IQSRegisters::SingleFingerGestures = IMPORTANT_IQS_REGISTERS[0x000D];

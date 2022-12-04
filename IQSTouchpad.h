@@ -62,13 +62,15 @@ class IQSTouchpad
 
         int _numFingers;
         struct Finger _fingers[5];
+        bool _wasUpdated = false;
 
     public:
-        IQSTouchpad(int PIN_RDY, int PIN_RST, int X_resolution = -1, int Y_resolution = -1, byte i2cAddress = DEFAULT_I2C_ADDRESS);
+        IQSTouchpad(int PIN_RDY, int PIN_RST, int X_resolution = -1, int Y_resolution = -1, bool switch_xy_axis = false, bool flip_y = false, bool flip_x = false,int maxFingers = 5, byte i2cAddress = DEFAULT_I2C_ADDRESS);
 
         // public only because the interrupt handler needs to access it
         static std::vector<IQSTouchpad*> _touchpads;
-        bool _ready = false;
+        volatile bool _ready = false;
+        const volatile bool& ready = _ready;
 
         // public
         void begin();
@@ -77,13 +79,9 @@ class IQSTouchpad
         void update();
         void setResolution(int X_resolution, int Y_resolution);
         void setReportRate(int reportRate, int mode);
-        int getReportRate(int mode);
-        byte getI2CAddress();
-        int getPIN_RDY();
-        int getPIN_RST();
-        bool isReady();
-
-        int getNumFingers();
+        void setXYConfig0(byte value);
+        void setXYConfig0(bool PALM_REJECT, bool SWITCH_XY_AXIS, bool FLIP_Y, bool FLIP_X);
+        void setMaxFingers(int maxFingers);
         Finger getFinger(int fingerNumber);
 
         // queue management
@@ -100,34 +98,35 @@ class IQSTouchpad
         // register + #bytes + valueToWrite + callback(int registerAddress, byte errorCode)
         void queueWrite(int registerAddress, int numBytes, int value, std::function<void(int, byte)> callback);
 
+        int getReportRate(int mode);
+
+        // getters
+        const bool& wasUpdated = _wasUpdated;
+        const int& numFingers = _numFingers;
         // relative movement, only defined when a single finger is detected
-        int getRelX();
-        int getRelY();
-
-        // system info
-        int getPrevCycleTime();
-        int getXResolution();
-        int getYResolution();
-
-        bool getRR_MISSED();
-        bool getSWITCH_STATE();
-        bool getSNAP_TOGGLE();
-        bool getTOO_MANY_FINGERS();
-        bool getPALM_DETECT();
-        bool getTP_MOVEMENT();
-        // gesture flags
-        // single finger gestures
-        bool getSWIPE_Y_NEG();
-        bool getSWIPE_Y_POS();
-        bool getSWIPE_X_NEG();
-        bool getSWIPE_X_POS();
-        bool getTAP_AND_HOLD();
-        bool getTAP();
-        // multi finger gestures
-        bool getZOOM();
-        bool getSCROLL();
-        bool getTWO_FINGER_TAP();
-
+        const int& relX = _relX;
+        const int& relY = _relY;
+        const int& X_resolution = _X_resolution;
+        const int& Y_resolution = _Y_resolution;
+        const int& prev_cycle_time = _prev_cycle_time;
+        const int& I2CAddress = _i2cAddress;
+        const int& PIN_RDY = _PIN_RDY;
+        const int& PIN_RST = _PIN_RST;
+        const bool& RR_MISSED = _RR_MISSED;
+        const bool& SWITCH_STATE = _SWITCH_STATE;
+        const bool& SNAP_TOGGLE = _SNAP_TOGGLE;
+        const bool& TOO_MANY_FINGERS = _TOO_MANY_FINGERS;
+        const bool& PALM_DETECT = _PALM_DETECT;
+        const bool& TP_MOVEMENT = _TP_MOVEMENT;
+        const bool& SWIPE_Y_NEG = _SWIPE_Y_NEG;
+        const bool& SWIPE_Y_POS = _SWIPE_Y_POS;
+        const bool& SWIPE_X_NEG = _SWIPE_X_NEG;
+        const bool& SWIPE_X_POS = _SWIPE_X_POS;
+        const bool& TAP_AND_HOLD = _TAP_AND_HOLD;
+        const bool& TAP = _TAP;
+        const bool& ZOOM = _ZOOM;
+        const bool& SCROLL = _SCROLL;
+        const bool& TWO_FINGER_TAP = _TWO_FINGER_TAP;
 };
 
 #endif // IQS_TOUCHPAD_H

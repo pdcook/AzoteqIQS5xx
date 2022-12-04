@@ -11,6 +11,14 @@
 
 #define DEFAULT_I2C_ADDRESS 0x74
 
+enum TouchpadMode
+{
+    ACTIVE,
+    IDLE_TOUCH,
+    IDLE,
+    LP1,
+    LP2,
+};
 
 class IQSTouchpad
 {
@@ -18,8 +26,6 @@ class IQSTouchpad
         byte _i2cAddress;
         int _PIN_RDY;
         int _PIN_RST;
-        int _X_res_to_set;
-        int _Y_res_to_set;
 
         // queue for pending reads
         std::queue<IQSRead> _readQueue;
@@ -30,11 +36,13 @@ class IQSTouchpad
         int _X_resolution;
         int _Y_resolution;
 
-        // values that are read/updated every cycle
+        //// values that are read/updated every cycle ////
 
-        // relative movement, only defined when a single finger is detected
-        int _relX = 0;
-        int _relY = 0;
+        // temporary storage for finger data
+        int _finger_x;
+        int _finger_y;
+        int _finger_force;
+        int _finger_area;
 
         // system info
         int _prev_cycle_time;
@@ -61,8 +69,14 @@ class IQSTouchpad
         bool _TWO_FINGER_TAP;
 
         int _numFingers;
-        struct Finger _fingers[5];
+
+        // finger data
+        Finger _fingers[5] { Finger(0), Finger(1), Finger(2), Finger(3), Finger(4) };
         bool _wasUpdated = false;
+
+        // method for reading and updating finger data in bulk
+        int _maxActiveFingers = 0; // max number of fingers that have been active at once, reset when numFingers = 0
+        void _updateFingerData(int num_fingers);
 
     public:
         IQSTouchpad(int PIN_RDY, int PIN_RST, int X_resolution = -1, int Y_resolution = -1, bool switch_xy_axis = false, bool flip_y = false, bool flip_x = false,int maxFingers = 5, byte i2cAddress = DEFAULT_I2C_ADDRESS);
@@ -77,12 +91,12 @@ class IQSTouchpad
         void reset();
         void endCommunicationWindow();
         void update();
-        void setResolution(int X_resolution, int Y_resolution);
-        void setReportRate(int reportRate, int mode);
+        void setResolution(int x_resolution, int y_resolution);
+        void setReportRate(int report_rate_milliseconds, TouchpadMode mode);
         void setXYConfig0(byte value);
         void setXYConfig0(bool PALM_REJECT, bool SWITCH_XY_AXIS, bool FLIP_Y, bool FLIP_X);
-        void setMaxFingers(int maxFingers);
-        Finger getFinger(int fingerNumber);
+        void setMaxFingers(int max_fingers);
+        Finger getFinger(int finger_number);
 
         // queue management
         void queueRead(IQSRead read);
@@ -103,9 +117,7 @@ class IQSTouchpad
         // getters
         const bool& wasUpdated = _wasUpdated;
         const int& numFingers = _numFingers;
-        // relative movement, only defined when a single finger is detected
-        const int& relX = _relX;
-        const int& relY = _relY;
+
         const int& X_resolution = _X_resolution;
         const int& Y_resolution = _Y_resolution;
         const int& prev_cycle_time = _prev_cycle_time;

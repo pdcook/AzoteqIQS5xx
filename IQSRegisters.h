@@ -33,6 +33,7 @@ class IQSRegister
         int getDataType() const;
 
         byte read(int device_address, byte* buf);
+        byte read(int device_address, byte* buf, int numBytesToRead);
         int read(int device_address);
         int read(int device_address, byte &error);
 

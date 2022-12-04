@@ -68,6 +68,11 @@ byte IQSRegister::read(int device_address, byte* buf)
     return I2CHelpers::readFromRegister(device_address, this->_address, this->_numBytes, buf);
 }
 
+byte IQSRegister::read(int device_address, byte* buf, int numBytesToRead)
+{
+    return I2CHelpers::readFromRegister(device_address, this->_address, numBytesToRead, buf);
+}
+
 int IQSRegister::read(int device_address)
 {
     byte error;

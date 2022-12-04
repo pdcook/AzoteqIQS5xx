@@ -17,8 +17,6 @@ IQSTouchpad::IQSTouchpad(int PIN_RDY, int PIN_RST, int X_resolution, int Y_resol
     this->_PIN_RDY = PIN_RDY;
     this->_PIN_RST = PIN_RST;
     this->_i2cAddress = i2cAddress;
-    this->_X_res_to_set = X_resolution;
-    this->_Y_res_to_set = Y_resolution;
 
     // add this touchpad to the list of touchpads
     IQSTouchpad::_touchpads.push_back(this);
@@ -151,9 +149,9 @@ void IQSTouchpad::setXYConfig0(byte value)
     this->queueWrite(IQSRegisters::XYConfig0, value);
 }
 
-void IQSTouchpad::setMaxFingers(int maxFingers)
+void IQSTouchpad::setMaxFingers(int max_fingers)
 {
-    this->queueWrite(IQSRegisters::MaxMultiTouches, maxFingers);
+    this->queueWrite(IQSRegisters::MaxMultiTouches, max_fingers);
 }
 
 void IQSTouchpad::setXYConfig0(bool PALM_REJECT, bool SWITCH_XY_AXIS, bool FLIP_Y, bool FLIP_X)
@@ -167,47 +165,47 @@ void IQSTouchpad::setXYConfig0(bool PALM_REJECT, bool SWITCH_XY_AXIS, bool FLIP_
     this->setXYConfig0(value);
 }
 
-void IQSTouchpad::setReportRate(int rate, int mode)
+void IQSTouchpad::setReportRate(int report_rate_milliseconds, TouchpadMode mode)
 {
     // modes:
     //
-    // 0 - Active Mode
-    // 1 - Idle Touch Mode
-    // 2 - Idle Mode
-    // 3 - LP1 Mode
-    // 4 - LP2 Mode
+    //  Active Mode
+    //  Idle Touch Mode
+    //  Idle Mode
+    //  LP1 Mode
+    //  LP2 Mode
 
     switch (mode)
     {
-        case 0:
-            IQSRegisters::ActiveModeReportRate.write(this->_i2cAddress, rate);
+        case TouchpadMode::ACTIVE:
+            this->queueWrite(IQSRegisters::ActiveModeReportRate, report_rate_milliseconds);
             break;
-        case 1:
-            IQSRegisters::IdleTouchModeReportRate.write(this->_i2cAddress, rate);
+        case TouchpadMode::IDLE_TOUCH:
+            this->queueWrite(IQSRegisters::IdleTouchModeReportRate, report_rate_milliseconds);
             break;
-        case 2:
-            IQSRegisters::IdleModeReportRate.write(this->_i2cAddress, rate);
+        case TouchpadMode::IDLE:
+            this->queueWrite(IQSRegisters::IdleModeReportRate, report_rate_milliseconds);
             break;
-        case 3:
-            IQSRegisters::LP1ModeReportRate.write(this->_i2cAddress, rate);
+        case TouchpadMode::LP1:
+            this->queueWrite(IQSRegisters::LP1ModeReportRate, report_rate_milliseconds);
             break;
-        case 4:
-            IQSRegisters::LP2ModeReportRate.write(this->_i2cAddress, rate);
+        case TouchpadMode::LP2:
+            this->queueWrite(IQSRegisters::LP2ModeReportRate, report_rate_milliseconds);
             break;
         default:
             throw std::invalid_argument("Invalid mode");
     }
 }
 
-Finger IQSTouchpad::getFinger(int fingerIndex)
+Finger IQSTouchpad::getFinger(int finger_index)
 {
-    if (fingerIndex >= 5)
+    if (finger_index >= 5)
     {
         // invalid finger index, throw error
         throw std::invalid_argument("Invalid finger index");
     }
     // get the finger
-    return this->_fingers[fingerIndex];
+    return this->_fingers[finger_index];
 }
 
 void IRAM_ATTR IQSInterruptHandler()
@@ -238,6 +236,7 @@ void IQSTouchpad::reset()
 void IQSTouchpad::begin()
 {
     Wire.begin();
+    Wire.setClock((uint32_t)(5*409600));
 
     pinMode(this->_PIN_RDY, INPUT);
     pinMode(this->_PIN_RST, OUTPUT);
@@ -296,116 +295,99 @@ void IQSTouchpad::update()
         /*
          * Read the following registers:
          * - Number of fingers
-         * - Relative X (if number of fingers == 1)
-         * - Relative Y (if number of fingers == 1)
          *
          * - Then the data for each finger 0, 1, 2, 3, 4 (if present):
          *   - Absolute X
          *   - Absolute Y
          *   - Touch Strength
          *   - Touch Area
+         *   - (Relative X is calculated from the previous Absolute X)
+         *   - (Relative Y is calculated from the previous Absolute Y)
          *
          */
 
         // number of fingers
         this->_numFingers = IQSRegisters::NumFingers.read(this->_i2cAddress);
 
-        // relative movement is only defined when a single finger is present
-        if (this->_numFingers == 1)
-        {
-            this->_relX = IQSRegisters::Finger1RelativeX.read(this->_i2cAddress);
-            this->_relY = IQSRegisters::Finger1RelativeY.read(this->_i2cAddress);
-        }
-        else
-        {
-            this->_relX = 0;
-            this->_relY = 0;
-        }
+        this->_updateFingerData(this->_numFingers);
+
+        /*
 
         if (this->_numFingers > 0)
         {
             // finger 1
-            this->_fingers[0].x = IQSRegisters::Finger1AbsoluteX.read(this->_i2cAddress);
-            this->_fingers[0].y = IQSRegisters::Finger1AbsoluteY.read(this->_i2cAddress);
-            this->_fingers[0].force = IQSRegisters::Finger1TouchStrength.read(this->_i2cAddress);
-            this->_fingers[0].area = IQSRegisters::Finger1TouchArea.read(this->_i2cAddress);
+            this->_finger_x = IQSRegisters::Finger1AbsoluteX.read(this->_i2cAddress);
+            this->_finger_y = IQSRegisters::Finger1AbsoluteY.read(this->_i2cAddress);
+            this->_finger_force = IQSRegisters::Finger1TouchStrength.read(this->_i2cAddress);
+            this->_finger_area = IQSRegisters::Finger1TouchArea.read(this->_i2cAddress);
+
+            this->_fingers[0].update(true, this->_finger_x, this->_finger_y, this->_finger_force, this->_finger_area);
         }
         else
         {
-            this->_fingers[0].x = -1;
-            this->_fingers[0].y = -1;
-            this->_fingers[0].force = -1;
-            this->_fingers[0].area = -1;
+            this->_fingers[0].update(false, 0, 0, 0, 0);
         }
 
         if (this->_numFingers > 1)
         {
             // finger 2
-            this->_fingers[1].x = IQSRegisters::Finger2AbsoluteX.read(this->_i2cAddress);
-            this->_fingers[1].y = IQSRegisters::Finger2AbsoluteY.read(this->_i2cAddress);
-            this->_fingers[1].force = IQSRegisters::Finger2TouchStrength.read(this->_i2cAddress);
-            this->_fingers[1].area = IQSRegisters::Finger2TouchArea.read(this->_i2cAddress);
+            this->_finger_x = IQSRegisters::Finger2AbsoluteX.read(this->_i2cAddress);
+            this->_finger_y = IQSRegisters::Finger2AbsoluteY.read(this->_i2cAddress);
+            this->_finger_force = IQSRegisters::Finger2TouchStrength.read(this->_i2cAddress);
+            this->_finger_area = IQSRegisters::Finger2TouchArea.read(this->_i2cAddress);
+
+            this->_fingers[1].update(true, this->_finger_x, this->_finger_y, this->_finger_force, this->_finger_area);
         }
         else
         {
-            this->_fingers[1].x = -1;
-            this->_fingers[1].y = -1;
-            this->_fingers[1].force = -1;
-            this->_fingers[1].area = -1;
+            this->_fingers[1].update(false, 0, 0, 0, 0);
         }
 
         if (this->_numFingers > 2)
         {
             // finger 3
-            this->_fingers[2].x = IQSRegisters::Finger3AbsoluteX.read(this->_i2cAddress);
-            this->_fingers[2].y = IQSRegisters::Finger3AbsoluteY.read(this->_i2cAddress);
-            this->_fingers[2].force = IQSRegisters::Finger3TouchStrength.read(this->_i2cAddress);
-            this->_fingers[2].area = IQSRegisters::Finger3TouchArea.read(this->_i2cAddress);
+            this->_finger_x = IQSRegisters::Finger3AbsoluteX.read(this->_i2cAddress);
+            this->_finger_y = IQSRegisters::Finger3AbsoluteY.read(this->_i2cAddress);
+            this->_finger_force = IQSRegisters::Finger3TouchStrength.read(this->_i2cAddress);
+            this->_finger_area = IQSRegisters::Finger3TouchArea.read(this->_i2cAddress);
+
+            this->_fingers[2].update(true, this->_finger_x, this->_finger_y, this->_finger_force, this->_finger_area);
         }
         else
         {
-            this->_fingers[2].x = -1;
-            this->_fingers[2].y = -1;
-            this->_fingers[2].force = -1;
-            this->_fingers[2].area = -1;
+            this->_fingers[2].update(false, 0, 0, 0, 0);
         }
 
         if (this->_numFingers > 3)
         {
             // finger 4
-            this->_fingers[3].x = IQSRegisters::Finger4AbsoluteX.read(this->_i2cAddress);
-            this->_fingers[3].y = IQSRegisters::Finger4AbsoluteY.read(this->_i2cAddress);
-            this->_fingers[3].force = IQSRegisters::Finger4TouchStrength.read(this->_i2cAddress);
-            this->_fingers[3].area = IQSRegisters::Finger4TouchArea.read(this->_i2cAddress);
+            this->_finger_x = IQSRegisters::Finger4AbsoluteX.read(this->_i2cAddress);
+            this->_finger_y = IQSRegisters::Finger4AbsoluteY.read(this->_i2cAddress);
+            this->_finger_force = IQSRegisters::Finger4TouchStrength.read(this->_i2cAddress);
+            this->_finger_area = IQSRegisters::Finger4TouchArea.read(this->_i2cAddress);
+
+            this->_fingers[3].update(true, this->_finger_x, this->_finger_y, this->_finger_force, this->_finger_area);
         }
         else
         {
-            this->_fingers[3].x = -1;
-            this->_fingers[3].y = -1;
-            this->_fingers[3].force = -1;
-            this->_fingers[3].area = -1;
+            this->_fingers[3].update(false, 0, 0, 0, 0);
         }
 
         if (this->_numFingers > 4)
         {
             // finger 5
-            this->_fingers[4].x = IQSRegisters::Finger5AbsoluteX.read(this->_i2cAddress);
-            this->_fingers[4].y = IQSRegisters::Finger5AbsoluteY.read(this->_i2cAddress);
-            this->_fingers[4].force = IQSRegisters::Finger5TouchStrength.read(this->_i2cAddress);
-            this->_fingers[4].area = IQSRegisters::Finger5TouchArea.read(this->_i2cAddress);
+            this->_finger_x = IQSRegisters::Finger5AbsoluteX.read(this->_i2cAddress);
+            this->_finger_y = IQSRegisters::Finger5AbsoluteY.read(this->_i2cAddress);
+            this->_finger_force = IQSRegisters::Finger5TouchStrength.read(this->_i2cAddress);
+            this->_finger_area = IQSRegisters::Finger5TouchArea.read(this->_i2cAddress);
+
+            this->_fingers[4].update(true, this->_finger_x, this->_finger_y, this->_finger_force, this->_finger_area);
         }
         else
         {
-            this->_fingers[4].x = -1;
-            this->_fingers[4].y = -1;
-            this->_fingers[4].force = -1;
-            this->_fingers[4].area = -1;
+            this->_fingers[4].update(false, 0, 0, 0, 0);
         }
-
-        //this->_prev_cycle_time = IQSRegisters::PreviousCycleTime.read(this->_i2cAddress);
-        //this->_RR_MISSED = I2CHelpers::getBit(IQSRegisters::SystemInfo1.read(this->_i2cAddress), 3);
-        //this->_X_resolution = IQSRegisters::XResolution.read(this->_i2cAddress);
-        //this->_Y_resolution = IQSRegisters::YResolution.read(this->_i2cAddress);
+        */
 
         this->_TAP = I2CHelpers::getBit(IQSRegisters::SingleFingerGestures.read(this->_i2cAddress), 0);
 
@@ -422,6 +404,82 @@ void IQSTouchpad::update()
     {
         // set updated flag
         this->_wasUpdated = false;
+    }
+
+}
+
+void IQSTouchpad::_updateFingerData(int num_fingers)
+{
+    // read the finger data in bulk
+    // this is faster than reading each register individually
+
+    // however, since the IQS550 tracks finger numbers,
+    // it is possible for only one finger to be present,
+    // but that finger not be finger 1.
+    // we can partially circumvent this by reading the finger data
+    // all the way up to the maximum number of fingers that have
+    // been active at the same time since the last time there were
+    // 0 fingers present.
+
+    // Illustration:
+    //
+    // 1. 0 fingers present
+    // 2. 1 finger present, IQS550 reports finger 1
+    // 3. 2 fingers present, IQS550 reports finger 1 and finger 2
+    // 4. the finger that was finger 1 is removed.
+    //          there is still 1 finger present,
+    //          which the IQS reports now as finger 2,
+    //          with garbage data in the finger 1 registers
+
+
+    // check max active fingers
+    if (num_fingers == 0)
+    {
+        this->_maxActiveFingers = 0;
+    }
+    else
+    {
+        if (num_fingers > this->_maxActiveFingers)
+        {
+            this->_maxActiveFingers = num_fingers;
+        }
+
+        // read the finger data up to the max number of active fingers
+        // each finger is 7 bytes
+
+        int buffer_size = this->_maxActiveFingers * 7;
+        byte buffer[buffer_size];
+
+        IQSRegisters::Finger1AbsoluteX.read(this->_i2cAddress, buffer, 7 * this->_maxActiveFingers);
+
+        // each finger is organized as:
+        // - 2 bytes for x (unsigned int)
+        // - 2 bytes for y (unsigned int)
+        // - 2 byte for force (unsigned int)
+        // - 1 bytes for area  (unsigned char)
+
+        for (int fingerIndex = 0; fingerIndex < this->_maxActiveFingers; fingerIndex++)
+        {
+            int fingerDataIndex = fingerIndex * 7;
+
+            // get the finger data
+            int finger_x = (buffer[fingerDataIndex] << 8) | buffer[fingerDataIndex + 1];
+            int finger_y = (buffer[fingerDataIndex + 2] << 8) | buffer[fingerDataIndex + 3];
+            int finger_force = (buffer[fingerDataIndex + 4] << 8) | buffer[fingerDataIndex + 5];
+            int finger_area = buffer[fingerDataIndex + 6];
+
+            // we can't use the fingerIndex to tell if the finger is present
+            bool finger_present = (finger_x >= 0 && finger_y >= 0 && finger_force >= 0 && finger_area >= 0);
+
+            // update the finger
+            this->_fingers[fingerIndex].update(finger_present, finger_x, finger_y, finger_force, finger_area);
+        }
+    }
+
+    // set all the fingers that are definitely not present to not present
+    for (int fingerIndex = num_fingers; fingerIndex < 5; fingerIndex++)
+    {
+        this->_fingers[fingerIndex].update(false, 0, 0, 0, 0);
     }
 
 }

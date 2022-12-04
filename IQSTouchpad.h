@@ -27,6 +27,10 @@ class IQSTouchpad
         int _PIN_RDY;
         int _PIN_RST;
 
+        // the touchpad must clear all pending writes at least once
+        // before it is initialized
+        bool _initialized = false;
+
         // queue for pending reads
         std::queue<IQSRead> _readQueue;
 
@@ -43,6 +47,8 @@ class IQSTouchpad
         int _finger_y;
         int _finger_force;
         int _finger_area;
+        byte* _finger_data_buffer;
+        int _bytes_to_read;
 
         // system info
         int _prev_cycle_time;
@@ -70,6 +76,10 @@ class IQSTouchpad
 
         int _numFingers;
 
+        int _PIN_SDA;
+        int _PIN_SCL;
+        bool _read_cycle_time;
+
         // finger data
         Finger _fingers[5] { Finger(0), Finger(1), Finger(2), Finger(3), Finger(4) };
         bool _wasUpdated = false;
@@ -77,9 +87,13 @@ class IQSTouchpad
         // method for reading and updating finger data in bulk
         int _maxActiveFingers = 0; // max number of fingers that have been active at once, reset when numFingers = 0
         void _updateFingerData(int num_fingers);
+        void _readTouchData();
+
+        // method for setting the default read address. should not be called by user
+        void _setDefaultReadAddress(IQSRegister reg);
 
     public:
-        IQSTouchpad(int PIN_RDY, int PIN_RST, int X_resolution = -1, int Y_resolution = -1, bool switch_xy_axis = false, bool flip_y = false, bool flip_x = false,int maxFingers = 5, byte i2cAddress = DEFAULT_I2C_ADDRESS);
+        IQSTouchpad(int PIN_RDY, int PIN_RST, int X_resolution = -1, int Y_resolution = -1, bool switch_xy_axis = false, bool flip_y = false, bool flip_x = false,int maxFingers = 5, byte i2cAddress = DEFAULT_I2C_ADDRESS, int PIN_SDA = -1, int PIN_SCL = -1, bool read_cycle_time = false);
 
         // public only because the interrupt handler needs to access it
         static std::vector<IQSTouchpad*> _touchpads;

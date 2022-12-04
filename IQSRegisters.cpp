@@ -28,39 +28,9 @@ IQSRegister::IQSRegister(int address, int numBytes, std::string name, std::strin
     this->_dataType = dataType;
 }
 
-int IQSRegister::getAddress() const
-{
-    return this->_address;
-}
-
-int IQSRegister::getNumBytes() const
-{
-    return this->_numBytes;
-}
-
 void IQSRegister::getAddressAsByteArray(byte *byteArray) const
 {
     I2CHelpers::intToTwoByteArray(this->_address, byteArray);
-}
-
-std::string IQSRegister::getName() const
-{
-    return this->_name;
-}
-
-std::string IQSRegister::getDescription() const
-{
-    return this->_description;
-}
-
-char IQSRegister::getMode() const
-{
-    return this->_mode;
-}
-
-int IQSRegister::getDataType() const
-{
-    return this->_dataType;
 }
 
 byte IQSRegister::read(int device_address, byte* buf)
@@ -85,26 +55,33 @@ int IQSRegister::read(int device_address, byte &error)
     {
         // cannot read from a write-only register
         // throw exception
-        throw std::invalid_argument("Cannot read from a write-only register");
+        //throw std::invalid_argument("Cannot read from a write-only register");
     }
     byte buf[this->_numBytes];
     error = this->read(device_address, buf);
     if (this->_dataType == 0 && this->_numBytes == 1)
     {
-        return buf[0];
+        int value = buf[0];
+        //delete[] buf; // free memory
+        return value;
     }
     else if (this->_dataType == 1)
     {
-        return I2CHelpers::byteArrayToInt(buf, this->_numBytes);
+        int value = I2CHelpers::byteArrayToInt(buf, this->_numBytes);
+        //delete[] buf; // free memory
+        return value;
     }
     else if (this->_dataType == 2)
     {
-        return I2CHelpers::byteArrayToSignedInt(buf, this->_numBytes);
+        int value = I2CHelpers::byteArrayToSignedInt(buf, this->_numBytes);
+        //delete[] buf; // free memory
+        return value;
     }
     else
     {
         // throw exception
-        throw std::invalid_argument("Invalid data type or number of bytes");
+        //delete[] buf; // free memory
+        //throw std::invalid_argument("Invalid data type or number of bytes");
     }
 }
 
@@ -114,7 +91,7 @@ byte IQSRegister::write(int device_address, byte* buf)
     {
         // cannot write to a read-only register
         // throw exception
-        throw std::invalid_argument("Cannot write to a read-only register");
+        //throw std::invalid_argument("Cannot write to a read-only register");
     }
     return I2CHelpers::writeToRegister(device_address, this->_address, this->_numBytes, buf);
 }
@@ -125,24 +102,28 @@ byte IQSRegister::write(int device_address, int value)
     {
         // cannot write to a read-only register
         // throw exception
-        throw std::invalid_argument("Cannot write to a read-only register");
+        //throw std::invalid_argument("Cannot write to a read-only register");
     }
     if (this->_numBytes == 1)
     {
         byte buf[1];
         buf[0] = value;
-        return I2CHelpers::writeToRegister(device_address, this->_address, this->_numBytes, buf);
+        byte error = I2CHelpers::writeToRegister(device_address, this->_address, this->_numBytes, buf);
+        //delete[] buf; // free memory
+        return error;
     }
     else if (this->_numBytes == 2)
     {
         byte buf[2];
         I2CHelpers::intToTwoByteArray(value, buf);
-        return I2CHelpers::writeToRegister(device_address, this->_address, this->_numBytes, buf);
+        byte error = I2CHelpers::writeToRegister(device_address, this->_address, this->_numBytes, buf);
+        //delete[] buf; // free memory
+        return error;
     }
     else
     {
         // unimplemented, throw exception
-        throw std::invalid_argument("Unimplemented");
+        //throw std::invalid_argument("Unimplemented");
     }
 }
 
@@ -202,6 +183,7 @@ IQSRegister IQSRegisters::LP2ModeReportRate       = IMPORTANT_IQS_REGISTERS[0x05
 IQSRegister IQSRegisters::I2CTimeout              = IMPORTANT_IQS_REGISTERS[0x058A];
 IQSRegister IQSRegisters::XYConfig0               = IMPORTANT_IQS_REGISTERS[0x0669];
 IQSRegister IQSRegisters::MaxMultiTouches         = IMPORTANT_IQS_REGISTERS[0x066A];
+IQSRegister IQSRegisters::DefaultReadAddress      = IMPORTANT_IQS_REGISTERS[0x0675];
 
 // flags
 IQSRegister IQSRegisters::SingleFingerGestures = IMPORTANT_IQS_REGISTERS[0x000D];

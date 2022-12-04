@@ -24,13 +24,13 @@ class IQSRegister
         IQSRegister(int address, int numBytes, std::string name, std::string description, char mode = 'r', int dataType = 1);
         IQSRegister(int address, int numBytes, char mode = 'r', int dataType = 1);
         IQSRegister();
-        int getAddress() const;
-        int getNumBytes() const;
+        const int getAddress() { return _address; }
+        const int getNumBytes() { return _numBytes; }
+        const std::string getName() { return _name; }
+        const std::string getDescription() { return _description; }
+        const char getMode() { return _mode; }
+        const int getDataType() { return _dataType; }
         void getAddressAsByteArray(byte *byteArray) const;
-        std::string getName() const;
-        std::string getDescription() const;
-        char getMode() const;
-        int getDataType() const;
 
         byte read(int device_address, byte* buf);
         byte read(int device_address, byte* buf, int numBytesToRead);
@@ -97,6 +97,7 @@ static std::unordered_map<int, IQSRegister> IMPORTANT_IQS_REGISTERS
     {0x058A, IQSRegister(0x058A, 1, "I2C Timeout", "I2C Timeout (ms)", 'b')},
     {0x0669, IQSRegister(0x0669, 1, "XY Config 0", "bits 7-4: unused, bit 3: PALM_REJECT, bit 2: SWITCH_XY_AXIS, bit 1: FLIP_Y, bit 0: FLIP_X", 'b', 0)},
     {0x066A, IQSRegister(0x066A, 1, "Max multi-touches", "Maximum number of concurrent fingers", 'b', 1)},
+    {0x0675, IQSRegister(0x0675, 2, "Default read address", "Default read address", 'b')},
 
     // gesture data (data is replicated in two registers)
     {0x000D, IQSRegister(0x000D, 1, "Single Finger Gestures", "bit 7: unused, bit 6: unused, bit 5: SWIPE Y-, bit 4: SWIPE Y+, bit 3: SWIPE X+, bit 2: SWIPE X-, bit 1: TAP AND HOLD, bit 0: SINGLE TAP", 'r', 0)},
@@ -151,6 +152,7 @@ class IQSRegisters
         static IQSRegister I2CTimeout;
         static IQSRegister XYConfig0;
         static IQSRegister MaxMultiTouches;
+        static IQSRegister DefaultReadAddress;
 
         // flags
         static IQSRegister SingleFingerGestures;

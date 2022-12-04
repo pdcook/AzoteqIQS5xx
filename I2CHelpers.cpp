@@ -32,6 +32,51 @@ int I2CHelpers::byteArrayToSignedInt(byte* bytes_array, int num_bytes)
     return value;
 }
 
+int I2CHelpers::wordToInt(byte high_byte, byte low_byte)
+{
+    return (high_byte << 8) + low_byte;
+}
+
+int I2CHelpers::wordToSignedInt(byte high_byte, byte low_byte)
+{
+    int value = (high_byte << 8) + low_byte;
+    if (value > 32767)
+    {
+        value = value - 65536;
+    }
+    return value;
+}
+
+
+byte I2CHelpers::readFromCurrentAddress(int device_address, int bytes_to_read, byte* buf)
+{
+    // perform a read without specifying the register address
+    // this will read from the current address if other read/writes
+    // have been performed in the same communication window
+    // or the default read address (stored in the register at 0x0675)
+    // if no other read/write has been performed
+    // this increases the speed of the read operation, by saving the
+    // time required to specify the register address
+
+    // request the bytes from the device, sending repeated start
+    Wire.requestFrom(device_address, bytes_to_read, false);
+
+    int i = 0;
+    byte error = 0;
+    while (Wire.available())
+    {
+      if (i >= bytes_to_read)
+      {
+        // if we have more bytes than we requested, return an error
+        error = 6;
+        break;
+      }
+      buf[i] = Wire.read();
+      i++;
+    }
+    return error;
+}
+
 byte I2CHelpers::readFromRegister(int device_address, int register_address, int bytes_to_read, byte* buf)
 {
     // start the transmission to device
@@ -46,6 +91,9 @@ byte I2CHelpers::readFromRegister(int device_address, int register_address, int 
 
     // end the transmission WITHOUT releasing the bus (sending repeated start instead)
     byte error = Wire.endTransmission(false);
+
+    // free memory
+    //delete[] addrByteArray;
 
     // if there was an error, return it
     if (error != 0)
@@ -87,6 +135,9 @@ byte I2CHelpers::writeToRegister(int device_address, int register_address, int b
     Wire.write(buf, bytes_to_write);
 
     byte error = Wire.endTransmission(true);
+
+    // free memory
+    //delete[] addrByteArray;
 
     return error;
 }

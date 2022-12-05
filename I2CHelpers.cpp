@@ -92,9 +92,6 @@ byte I2CHelpers::readFromRegister(int device_address, int register_address, int 
     // end the transmission WITHOUT releasing the bus (sending repeated start instead)
     byte error = Wire.endTransmission(false);
 
-    // free memory
-    //delete[] addrByteArray;
-
     // if there was an error, return it
     if (error != 0)
     {
@@ -135,9 +132,6 @@ byte I2CHelpers::writeToRegister(int device_address, int register_address, int b
     Wire.write(buf, bytes_to_write);
 
     byte error = Wire.endTransmission(true);
-
-    // free memory
-    //delete[] addrByteArray;
 
     return error;
 }

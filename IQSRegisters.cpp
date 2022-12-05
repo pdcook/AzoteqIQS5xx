@@ -62,25 +62,21 @@ int IQSRegister::read(int device_address, byte &error)
     if (this->_dataType == 0 && this->_numBytes == 1)
     {
         int value = buf[0];
-        //delete[] buf; // free memory
         return value;
     }
     else if (this->_dataType == 1)
     {
         int value = I2CHelpers::byteArrayToInt(buf, this->_numBytes);
-        //delete[] buf; // free memory
         return value;
     }
     else if (this->_dataType == 2)
     {
         int value = I2CHelpers::byteArrayToSignedInt(buf, this->_numBytes);
-        //delete[] buf; // free memory
         return value;
     }
     else
     {
         // throw exception
-        //delete[] buf; // free memory
         //throw std::invalid_argument("Invalid data type or number of bytes");
     }
 }
@@ -109,7 +105,6 @@ byte IQSRegister::write(int device_address, int value)
         byte buf[1];
         buf[0] = value;
         byte error = I2CHelpers::writeToRegister(device_address, this->_address, this->_numBytes, buf);
-        //delete[] buf; // free memory
         return error;
     }
     else if (this->_numBytes == 2)
@@ -117,7 +112,6 @@ byte IQSRegister::write(int device_address, int value)
         byte buf[2];
         I2CHelpers::intToTwoByteArray(value, buf);
         byte error = I2CHelpers::writeToRegister(device_address, this->_address, this->_numBytes, buf);
-        //delete[] buf; // free memory
         return error;
     }
     else

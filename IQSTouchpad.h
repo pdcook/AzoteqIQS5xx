@@ -1,13 +1,13 @@
 #ifndef IQS_TOUCHPAD_H
 #define IQS_TOUCHPAD_H
 
-#include <Arduino.h>
 #include "IQSRegisters.h"
 #include <vector>
 #include "Finger.h"
 #include "IQSQueue.h"
 #include <queue>
 #include <functional>
+#include <Arduino.h>
 
 #define DEFAULT_I2C_ADDRESS 0x74
 

@@ -1,9 +1,9 @@
 #ifndef IQSQUEUE_H
 #define IQSQUEUE_H
 
-#include <Arduino.h>
 #include <functional>
 #include "IQSRegisters.h"
+#include <Arduino.h>
 
 struct IQSRead
 {

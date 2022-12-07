@@ -1,5 +1,4 @@
 #include "IQSTouchpad.h"
-#include <Arduino.h>
 #include <Wire.h>
 #include "I2CHelpers.h"
 #include "IQSRegisters.h"
@@ -8,6 +7,7 @@
 #include <queue>
 #include <functional>
 #include "IQSQueue.h"
+#include <Arduino.h>
 
 std::vector<IQSTouchpad*> IQSTouchpad::_touchpads = std::vector<IQSTouchpad*>();
 
@@ -267,7 +267,12 @@ Finger IQSTouchpad::getFinger(int finger_index)
     return this->_fingers[finger_index];
 }
 
+#ifdef ESP32
+// ESP32 needs IRAM_ATTR
 void IRAM_ATTR IQSInterruptHandler()
+#else
+void IQSInterruptHandler()
+#endif // ESP32
 {
     // loop through all the touchpads and find the one that triggered the interrupt
     for (int i = 0; i < IQSTouchpad::_touchpads.size(); i++)

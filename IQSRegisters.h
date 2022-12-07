@@ -2,8 +2,8 @@
 #define IQS_REGISTERS_H
 
 #include <string>
-#include <Arduino.h>
 #include <unordered_map>
+#include <Arduino.h>
 
 class IQSRegister
 {

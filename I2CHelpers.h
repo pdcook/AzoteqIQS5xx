@@ -1,9 +1,9 @@
 #ifndef I2C_HELPERS_H
 #define I2C_HELPERS_H
 
-#include <Arduino.h>
 #include <Wire.h>
 #include <string>
+#include <Arduino.h>
 
 #define END_COMM_REG 0xEEEE
 

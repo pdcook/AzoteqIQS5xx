@@ -1,6 +1,6 @@
+#include <string>
 #include "I2CHelpers.h"
 #include <Wire.h>
-#include <string>
 
 void I2CHelpers::intToTwoByteArray(int value, byte* bytes_array)
 {
@@ -164,6 +164,6 @@ byte I2CHelpers::endCommunication(int device_address)
     I2CHelpers::intToTwoByteArray(END_COMM_REG, addrByteArray);
 
     Wire.write(addrByteArray, 2);   // send the End Communication Window command address
-    Wire.write(0);                  // write one byte
+    Wire.write('a');                  // write one byte
     return Wire.endTransmission(true);     // end transmission WITH I2C STOP message
 }

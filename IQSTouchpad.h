@@ -58,7 +58,7 @@ class IQSTouchpad
         bool _SWIPE_Y_POS;
         bool _SWIPE_X_NEG;
         bool _SWIPE_X_POS;
-        bool _TAP_AND_HOLD;
+        bool _PRESS_AND_HOLD;
         bool _TAP;
         // multi finger gestures
         bool _ZOOM;
@@ -136,7 +136,7 @@ class IQSTouchpad
         const bool& SWIPE_Y_POS = _SWIPE_Y_POS;
         const bool& SWIPE_X_NEG = _SWIPE_X_NEG;
         const bool& SWIPE_X_POS = _SWIPE_X_POS;
-        const bool& TAP_AND_HOLD = _TAP_AND_HOLD;
+        const bool& PRESS_AND_HOLD = _PRESS_AND_HOLD;
         const bool& TAP = _TAP;
         const bool& ZOOM = _ZOOM;
         const bool& SCROLL = _SCROLL;

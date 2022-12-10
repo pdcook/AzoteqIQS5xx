@@ -449,7 +449,7 @@ void IQSTouchpad::_readTouchData()
     // the next byte is the single finger gestures
     byte single_finger_gestures = this->_finger_data_buffer[buffer_index++];
     this->_TAP = I2CHelpers::getBit(single_finger_gestures, 0);
-    this->_TAP_AND_HOLD = I2CHelpers::getBit(single_finger_gestures, 1);
+    this->_PRESS_AND_HOLD = I2CHelpers::getBit(single_finger_gestures, 1);
     this->_SWIPE_X_POS = I2CHelpers::getBit(single_finger_gestures, 2);
     this->_SWIPE_X_NEG = I2CHelpers::getBit(single_finger_gestures, 3);
     this->_SWIPE_Y_POS = I2CHelpers::getBit(single_finger_gestures, 4);

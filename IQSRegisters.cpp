@@ -56,6 +56,8 @@ int IQSRegister::read(int device_address, byte &error)
         // cannot read from a write-only register
         // throw exception
         //throw std::invalid_argument("Cannot read from a write-only register");
+        error = 8;
+        return 0;
     }
     byte buf[this->_numBytes];
     error = this->read(device_address, buf);
@@ -78,6 +80,8 @@ int IQSRegister::read(int device_address, byte &error)
     {
         // throw exception
         //throw std::invalid_argument("Invalid data type or number of bytes");
+        error = 9;
+        return 0;
     }
 }
 
@@ -88,6 +92,7 @@ byte IQSRegister::write(int device_address, byte* buf)
         // cannot write to a read-only register
         // throw exception
         //throw std::invalid_argument("Cannot write to a read-only register");
+        return 8;
     }
     return I2CHelpers::writeToRegister(device_address, this->_address, this->_numBytes, buf);
 }
@@ -99,6 +104,7 @@ byte IQSRegister::write(int device_address, int value)
         // cannot write to a read-only register
         // throw exception
         //throw std::invalid_argument("Cannot write to a read-only register");
+        return 8;
     }
     if (this->_numBytes == 1)
     {
@@ -118,6 +124,7 @@ byte IQSRegister::write(int device_address, int value)
     {
         // unimplemented, throw exception
         //throw std::invalid_argument("Unimplemented");
+        return 9;
     }
 }
 

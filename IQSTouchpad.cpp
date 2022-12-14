@@ -18,16 +18,14 @@ IQSTouchpad::IQSTouchpad(int PIN_RDY, int PIN_RST, int X_resolution, int Y_resol
     this->_i2cAddress = i2cAddress;
     this->_initialized = false;
 
-    // add this touchpad to the list of touchpads
-    IQSTouchpad::_touchpads.push_back(this);
-
     // queue settings writes
     this->setResolution(X_resolution, Y_resolution);
     this->setXYConfig0(true, switch_xy_axis, flip_y, flip_x);
     this->setMaxFingers(maxFingers);
 
     // set default read address
-    this->_setDefaultReadAddress(IQSRegisters::SingleFingerGestures);
+    //this->_setDefaultReadAddress(IQSRegisters::SingleFingerGestures);
+    this->queueWrite(0x0675, 2, 0x000D);
 }
 
 void IQSTouchpad::queueRead(IQSRead read)
@@ -35,7 +33,7 @@ void IQSTouchpad::queueRead(IQSRead read)
     this->_readQueue.push(read);
 }
 
-void IQSTouchpad::queueRead(IQSRegister reg, std::function<void(int, byte)> callback)
+void IQSTouchpad::queueRead(IQSRegister* reg, std::function<void(int, byte)> callback)
 {
     // define a lambda function that will take the i2cAddress, registerAddress, read value, and return code and pass only the read value and return code to the callback function
     auto callbackWrapper = [callback](int i2cAddress, int registerAddress, int readValue, byte returnCode)
@@ -53,6 +51,12 @@ void IQSTouchpad::queueRead(IQSRegister reg, std::function<void(int, byte)> call
     this->_readQueue.push(newRead);
 }
 
+void IQSTouchpad::queueRead(int registerAddress, int numBytes, std::function<void(int, int, byte)> callback, int dataType)
+{
+    this->queueRead(registerAddress, numBytes, dataType, callback);
+}
+
+
 void IQSTouchpad::queueRead(int registerAddress, int numBytes, int dataType, std::function<void(int,int,byte)> callback)
 {
     // define a lambda function that will take the i2cAddress, registerAddress, read value, and return code and pass only the read value and return code to the callback function
@@ -62,7 +66,7 @@ void IQSTouchpad::queueRead(int registerAddress, int numBytes, int dataType, std
     };
 
     // create an IQSRegister object
-    IQSRegister reg = IQSRegister(registerAddress, numBytes, "", "", dataType);
+    IQSRegister* reg = new IQSRegister(registerAddress, numBytes, "", "", dataType);
 
     // create a read object and add it to the queue
     IQSRead newRead = {
@@ -77,17 +81,18 @@ void IQSTouchpad::queueRead(int registerAddress, int numBytes, int dataType, std
 void IQSTouchpad::queueWrite(IQSWrite write)
 {
     // refuse to write to the default read address register
-    if (write.reg.getAddress() == IQSRegisters::DefaultReadAddress.getAddress())
+    /*
+    if (write.reg->getAddress() == IQSRegisters::DefaultReadAddress.getAddress())
     {
         // error code 7: refused
-        write.callback(this->_i2cAddress, write.reg.getAddress(), 7);
+        write.callback(this->_i2cAddress, write.reg->getAddress(), 7);
         return;
-    }
+    }*/
 
     this->_writeQueue.push(write);
 }
 
-void IQSTouchpad::queueWrite(IQSRegister reg, int value)
+void IQSTouchpad::queueWrite(IQSRegister* reg, int value)
 {
 
     // create a blank callback function
@@ -105,7 +110,7 @@ void IQSTouchpad::queueWrite(IQSRegister reg, int value)
 
     this->_writeQueue.push(newWrite);
 }
-void IQSTouchpad::queueWrite(IQSRegister reg, int value, std::function<void(int, byte)> callback)
+void IQSTouchpad::queueWrite(IQSRegister* reg, int value, std::function<void(int, byte)> callback)
 {
 
     // create a wrapper callback function
@@ -128,7 +133,7 @@ void IQSTouchpad::queueWrite(IQSRegister reg, int value, std::function<void(int,
 void IQSTouchpad::queueWrite(int registerAddress, int numBytes, int value)
 {
     // create an IQSRegister object
-    IQSRegister reg = IQSRegister(registerAddress, numBytes, 'b', 0);
+    IQSRegister* reg = new IQSRegister(registerAddress, numBytes, 'b', 0);
 
     // create a blank callback function
     auto callbackWrapper = [](int i2cAddress, int registerAddress, byte returnCode)
@@ -149,7 +154,7 @@ void IQSTouchpad::queueWrite(int registerAddress, int numBytes, int value)
 void IQSTouchpad::queueWrite(int registerAddress, int numBytes, int value, std::function<void(int,byte)> callback)
 {
     // create an IQSRegister object
-    IQSRegister reg = IQSRegister(registerAddress, numBytes, 'b', 0);
+    IQSRegister* reg = new IQSRegister(registerAddress, numBytes, 'b', 0);
 
     // create a wrapper callback function
     auto callbackWrapper = [callback](int i2cAddress, int registerAddress, byte returnCode)
@@ -168,9 +173,9 @@ void IQSTouchpad::queueWrite(int registerAddress, int numBytes, int value, std::
     this->_writeQueue.push(newWrite);
 }
 
-void IQSTouchpad::_setDefaultReadAddress(IQSRegister reg)
+void IQSTouchpad::_setDefaultReadAddress(IQSRegister* reg)
 {
-    this->queueWrite(IQSRegisters::DefaultReadAddress, reg.getAddress());
+    this->queueWrite(IQSRegisters::DefaultReadAddress, reg->getAddress());
 }
 
 void IQSTouchpad::setResolution(int x_res, int y_res)
@@ -189,13 +194,16 @@ void IQSTouchpad::setResolution(int x_res, int y_res)
             this->_Y_resolution = y_res;
         }
     };
-    this->queueWrite(IQSRegisters::XResolution, x_res, callback_x);
-    this->queueWrite(IQSRegisters::YResolution, y_res, callback_y);
+    //this->queueWrite(IQSRegisters::XResolution, x_res, callback_x);
+    //this->queueWrite(IQSRegisters::YResolution, y_res, callback_y);
+    this->queueWrite(0x066E, 2, x_res, callback_x);
+    this->queueWrite(0x0670, 2, y_res, callback_y);
 }
 
 void IQSTouchpad::setXYConfig0(byte value)
 {
-    this->queueWrite(IQSRegisters::XYConfig0, value);
+    //this->queueWrite(IQSRegisters::XYConfig0, value);
+    this->queueWrite(0x0669, 1, value);
 }
 
 void IQSTouchpad::setMaxFingers(int max_fingers)
@@ -208,7 +216,8 @@ void IQSTouchpad::setMaxFingers(int max_fingers)
         }
     };
 
-    this->queueWrite(IQSRegisters::MaxMultiTouches, max_fingers, callback);
+    //this->queueWrite(IQSRegisters::MaxMultiTouches, max_fingers, callback);
+    this->queueWrite(0x066A, 1, max_fingers, callback);
 }
 
 void IQSTouchpad::setXYConfig0(bool PALM_REJECT, bool SWITCH_XY_AXIS, bool FLIP_Y, bool FLIP_X)
@@ -235,19 +244,24 @@ void IQSTouchpad::setReportRate(int report_rate_milliseconds, TouchpadMode mode)
     switch (mode)
     {
         case TouchpadMode::ACTIVE:
-            this->queueWrite(IQSRegisters::ActiveModeReportRate, report_rate_milliseconds);
+            //this->queueWrite(IQSRegisters::ActiveModeReportRate, report_rate_milliseconds);
+            this->queueWrite(0x057A, 2, report_rate_milliseconds);
             break;
         case TouchpadMode::IDLE_TOUCH:
-            this->queueWrite(IQSRegisters::IdleTouchModeReportRate, report_rate_milliseconds);
+            //this->queueWrite(IQSRegisters::IdleTouchModeReportRate, report_rate_milliseconds);
+            this->queueWrite(0x057C, 2, report_rate_milliseconds);
             break;
         case TouchpadMode::IDLE:
-            this->queueWrite(IQSRegisters::IdleModeReportRate, report_rate_milliseconds);
+            //this->queueWrite(IQSRegisters::IdleModeReportRate, report_rate_milliseconds);
+            this->queueWrite(0x057E, 2, report_rate_milliseconds);
             break;
         case TouchpadMode::LP1:
-            this->queueWrite(IQSRegisters::LP1ModeReportRate, report_rate_milliseconds);
+            //this->queueWrite(IQSRegisters::LP1ModeReportRate, report_rate_milliseconds);
+            this->queueWrite(0x0580, 2, report_rate_milliseconds);
             break;
         case TouchpadMode::LP2:
-            this->queueWrite(IQSRegisters::LP2ModeReportRate, report_rate_milliseconds);
+            //this->queueWrite(IQSRegisters::LP2ModeReportRate, report_rate_milliseconds);
+            this->queueWrite(0x0582, 2, report_rate_milliseconds);
             break;
         default:
             break;
@@ -270,9 +284,10 @@ Finger IQSTouchpad::getFinger(int finger_index)
 #ifdef ESP32
 // ESP32 needs IRAM_ATTR
 void IRAM_ATTR IQSInterruptHandler()
-#else
+#endif
+#ifdef NRF52_SERIES
 void IQSInterruptHandler()
-#endif // ESP32
+#endif
 {
     // loop through all the touchpads and find the one that triggered the interrupt
     for (int i = 0; i < IQSTouchpad::_touchpads.size(); i++)
@@ -299,6 +314,10 @@ void IQSTouchpad::reset()
 
 void IQSTouchpad::_begin()
 {
+    // add this touchpad to the list of touchpads
+    IQSTouchpad::_touchpads.push_back(this);
+
+
     pinMode(this->_PIN_RDY, INPUT);
     pinMode(this->_PIN_RST, OUTPUT);
 
@@ -306,7 +325,7 @@ void IQSTouchpad::_begin()
     this->reset();
 
     // attach interrupt to RDY pin
-    attachInterrupt(this->_PIN_RDY, IQSInterruptHandler, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(this->_PIN_RDY), IQSInterruptHandler, CHANGE);
 }
 
 void IQSTouchpad::begin()
@@ -378,8 +397,8 @@ void IQSTouchpad::update()
 
                 // read the value from the register
                 byte error;
-                int value = read.reg.read(read.i2cAddress, error);
-                read.callback(read.i2cAddress, read.reg.getAddress(), value, error);
+                int value = read.reg->read(read.i2cAddress, error);
+                read.callback(read.i2cAddress, read.reg->getAddress(), value, error);
 
                 // remove the read from the queue
                 this->_readQueue.pop();
@@ -392,8 +411,8 @@ void IQSTouchpad::update()
             IQSWrite write = this->_writeQueue.front();
 
             // write the value to the register
-            byte error = write.reg.write(write.i2cAddress, write.valueToWrite);
-            write.callback(write.i2cAddress, write.reg.getAddress(), error);
+            byte error = write.reg->write(write.i2cAddress, write.valueToWrite);
+            write.callback(write.i2cAddress, write.reg->getAddress(), error);
 
             // remove the write from the queue
             this->_writeQueue.pop();
@@ -413,6 +432,7 @@ void IQSTouchpad::update()
             // set updated flag
             this->_wasUpdated = true;
         }
+
         // end communication window
         this->endCommunicationWindow();
 
@@ -486,6 +506,7 @@ void IQSTouchpad::_readTouchData()
 
         return;
     }
+
 
     // the next 4 bytes are relative X and Y for finger 1
     // since we calculate this from the previous absolute X and Y,

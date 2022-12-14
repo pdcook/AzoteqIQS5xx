@@ -76,7 +76,7 @@ class IQSTouchpad
         void _readTouchData();
 
         // method for setting the default read address. should not be called by user
-        void _setDefaultReadAddress(IQSRegister reg);
+        void _setDefaultReadAddress(IQSRegister* reg);
 
         // base begin method
         void _begin();
@@ -105,14 +105,14 @@ class IQSTouchpad
         // queue management
         void queueRead(IQSRead read);
         // register + callback(int readValue, byte errorCode)
-        void queueRead(IQSRegister reg, std::function<void(int, byte)> callback);
+        void queueRead(IQSRegister* reg, std::function<void(int, byte)> callback);
         // register + #bytes + callback(int registerAddress, int readValue, byte errorCode)
         void queueRead(int registerAddress, int numBytes, int dataType, std::function<void(int, int, byte)> callback);
-        // register + #bytes + callback(int registerAddress, int readValue, byte errorCode), int dataType [see IQSRegister.h]
+        // register + #bytes + callback(int registerAddress, int readValue, byte errorCode), int dataType [see IQSRegisters.h]
         void queueRead(int registerAddress, int numBytes, std::function<void(int, int, byte)> callback, int dataType = 1);
         void queueWrite(IQSWrite write);
-        void queueWrite(IQSRegister reg, int value);
-        void queueWrite(IQSRegister reg, int value, std::function<void(int, byte)> callback);
+        void queueWrite(IQSRegister* reg, int value);
+        void queueWrite(IQSRegister* reg, int value, std::function<void(int, byte)> callback);
         void queueWrite(int registerAddress, int numBytes, int value);
         // register + #bytes + valueToWrite + callback(int registerAddress, byte errorCode)
         void queueWrite(int registerAddress, int numBytes, int value, std::function<void(int, byte)> callback);

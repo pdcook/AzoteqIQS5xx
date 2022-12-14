@@ -59,7 +59,8 @@ byte I2CHelpers::readFromCurrentAddress(int device_address, int bytes_to_read, b
     // time required to specify the register address
 
     // request the bytes from the device, sending repeated start
-    Wire.requestFrom(device_address, bytes_to_read, false);
+    //Wire.requestFrom(device_address, bytes_to_read, false);
+    Wire.requestFrom(device_address, bytes_to_read, true);
 
     int i = 0;
     byte error = 0;
@@ -98,8 +99,9 @@ byte I2CHelpers::readFromRegister(int device_address, int register_address, int 
         return error;
     }
 
-    // request the bytes from the device, sending repeated start
-    Wire.requestFrom(device_address, bytes_to_read, false);
+    // request the bytes from the device, sending stop when done
+    //Wire.requestFrom(device_address, bytes_to_read, false);
+    Wire.requestFrom(device_address, bytes_to_read, true);
 
     int i = 0;
     while (Wire.available())

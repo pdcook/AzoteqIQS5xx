@@ -281,23 +281,26 @@ Finger IQSTouchpad::getFinger(int finger_index)
     return this->_fingers[finger_index];
 }
 
-#ifdef ESP32
-// ESP32 needs IRAM_ATTR
-void IRAM_ATTR IQSInterruptHandler()
-#endif
-#ifdef NRF52_SERIES
-void IQSInterruptHandler()
-#endif
+namespace IQSInterrupt
 {
-    // loop through all the touchpads and find the one that triggered the interrupt
-    for (int i = 0; i < IQSTouchpad::_touchpads.size(); i++)
+    #ifdef ESP32
+    // ESP32 needs IRAM_ATTR
+    void IRAM_ATTR IQSInterruptHandler()
+    #endif
+    #ifdef NRF52_SERIES
+    void IQSInterruptHandler()
+    #endif
     {
-        IQSTouchpad *touchpad = IQSTouchpad::_touchpads[i];
-        if (digitalRead(touchpad->PIN_RDY))
+        // loop through all the touchpads and find the one that triggered the interrupt
+        for (int i = 0; i < IQSTouchpad::_touchpads.size(); i++)
         {
-            if (!touchpad->_ready)
+            IQSTouchpad *touchpad = IQSTouchpad::_touchpads[i];
+            if (digitalRead(touchpad->PIN_RDY))
             {
-                touchpad->_ready = true;
+                if (!touchpad->_ready)
+                {
+                    touchpad->_ready = true;
+                }
             }
         }
     }
@@ -325,7 +328,7 @@ void IQSTouchpad::_begin()
     this->reset();
 
     // attach interrupt to RDY pin
-    attachInterrupt(digitalPinToInterrupt(this->_PIN_RDY), IQSInterruptHandler, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(this->_PIN_RDY), IQSInterrupt::IQSInterruptHandler, CHANGE);
 }
 
 void IQSTouchpad::begin()
